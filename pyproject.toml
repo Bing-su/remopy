@@ -1,0 +1,33 @@
+[project]
+name = "remopy"
+description = "Execute python functions from github."
+authors = [
+    {name = "dowon", email = "ks2515@naver.com"},
+]
+dependencies = []
+requires-python = ">=3.7"
+readme = "README.md"
+license = {text = "MIT"}
+dynamic = ["version"]
+
+[build-system]
+requires = ["pdm-pep517>=1.0.0"]
+build-backend = "pdm.pep517.api"
+
+[tool]
+[tool.pdm]
+[tool.pdm.version]
+source = "file"
+path = "remopy/__version__.py"
+
+[tool.pdm.dev-dependencies]
+dev = [
+    "black",
+    "isort",
+    "ruff",
+    "mypy",
+]
+
+[tool.ruff]
+select = ["A", "B", "C4", "E", "F", "N", "PT", "UP", "W"]
+ignore = ["B008", "B905", "E501"]
