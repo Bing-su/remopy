@@ -4,7 +4,9 @@ description = "Execute python functions from github."
 authors = [
     {name = "dowon", email = "ks2515@naver.com"},
 ]
-dependencies = []
+dependencies = [
+    "requests",
+]
 requires-python = ">=3.7"
 readme = "README.md"
 license = {text = "MIT"}
