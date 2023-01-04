@@ -116,7 +116,7 @@ class Remopy:
         self,
         github: str,
         filename: str,
-        entry: str,
+        entry: str | None = None,
         force_download: bool = False,
         single_file: bool = False,
     ) -> Any:
