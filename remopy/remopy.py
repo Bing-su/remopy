@@ -147,12 +147,13 @@ class Remopy:
         if force_download or not cache_path.exists():
             remove_if_exists(cache_path)
             zip_bytes = download_repository_zipfile(repo_info)
-            cache_path.mkdir(parents=True, exist_ok=True)
 
             with TemporaryDirectory() as tmp:
                 zip_file_path = Path(tmp).joinpath("repo.zip")
                 zip_file_path.write_bytes(zip_bytes)
-                shutil.unpack_archive(zip_file_path, cache_path)
+                shutil.unpack_archive(zip_file_path, tmp)
+                folder = next(p for p in Path(tmp).iterdir() if p.is_dir())
+                shutil.move(folder.as_posix(), cache_path.as_posix())
         return cache_path
 
     def _download_single_file(
