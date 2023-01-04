@@ -83,11 +83,16 @@ def download_repository_single_file(repo_info: RepoInfo, filename: str) -> bytes
 
 
 class Remopy:
-    def __init__(self):
-        if "REMOPY_CACHE_DIR" in os.environ:
+    def __init__(self, cache_dir: str | os.PathLike | None = None) -> None:
+        if cache_dir:
+            self._cache_dir = Path(cache_dir).absolute()
+        elif "REMOPY_CACHE_DIR" in os.environ:
             self._cache_dir = Path(os.environ["REMOPY_CACHE_DIR"]).absolute()
         else:
             self._cache_dir = Path.home().joinpath(".cache", "remopy")
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(cache_dir={self.cache_dir})"
 
     @property
     def cache_dir(self) -> Path:
@@ -112,7 +117,7 @@ class Remopy:
         cache_path = self.cache_dir.joinpath(cache_name)
         return cache_path
 
-    def __call__(
+    def load(
         self,
         github: str,
         filename: str,
@@ -133,11 +138,13 @@ class Remopy:
             entrypoint = self._import_from_file(cache_path, entry)
         return entrypoint
 
+    __call__ = load
+
     def _download_repository(
         self, repo_info: RepoInfo, force_download: bool = False
     ) -> Path:
         cache_path = self.repoinfo_to_cache_path(repo_info)
-        if (not cache_path.exists()) or force_download:
+        if force_download or not cache_path.exists():
             remove_if_exists(cache_path)
             zip_bytes = download_repository_zipfile(repo_info)
             cache_path.mkdir(parents=True, exist_ok=True)
@@ -152,9 +159,10 @@ class Remopy:
         self, repo_info: RepoInfo, filename: str, force_download: bool = False
     ) -> Path:
         cache_path = self.repoinfo_to_cache_path(repo_info, filename)
-        if (not cache_path.exists()) or force_download:
+        if force_download or not cache_path.exists():
             remove_if_exists(cache_path)
             file_bytes = download_repository_single_file(repo_info, filename)
+            cache_path.parent.mkdir(parents=True, exist_ok=True)
             cache_path.write_bytes(file_bytes)
         return cache_path
 
@@ -180,3 +188,12 @@ class Remopy:
         if not entry:
             return module
         return getattr(module, entry)
+
+    def delete_cache(self, github: str | None = None) -> None:
+        if github:
+            repo_info = parse_repo_info(github)
+            cache_path = self.repoinfo_to_cache_path(repo_info)
+            remove_if_exists(cache_path)
+            remove_if_exists(self.cache_dir.joinpath("__pycache__"))
+        else:
+            remove_if_exists(self.cache_dir)
