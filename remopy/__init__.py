@@ -31,5 +31,5 @@ def help(  # noqa: A001
     return None
 
 
-def delete_cache(github: str | None = None) -> None:
-    _remopy.delete_cache(github)
+def clear_cache(github: str | None = None) -> None:
+    _remopy.clear_cache(github)

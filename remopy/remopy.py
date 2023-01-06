@@ -21,8 +21,8 @@ class RepoInfo:
 
 def default_headers(token: str | None = None) -> dict[str, str]:
     headers = {"Accept": "application/vnd.github+json"}
-    if not token:
-        token = os.environ.get("GITHUB_TOKEN", None)
+    if not token and "GITHUB_TOKEN" in os.environ:
+        token = os.environ["GITHUB_TOKEN"]
     if token:
         headers["Authorization"] = f"Bearer {token}"
     return headers
@@ -89,7 +89,7 @@ class Remopy:
         elif "REMOPY_CACHE_DIR" in os.environ:
             self._cache_dir = Path(os.environ["REMOPY_CACHE_DIR"]).absolute()
         else:
-            self._cache_dir = Path.home().joinpath(".cache", "remopy")
+            self._cache_dir = self.default_cache_dir()
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(cache_dir={self.cache_dir})"
@@ -99,8 +99,14 @@ class Remopy:
         return self._cache_dir
 
     @cache_dir.setter
-    def cache_dir(self, path: str | os.PathLike) -> None:
-        self._cache_dir = Path(path).absolute()
+    def cache_dir(self, path: str | os.PathLike | None) -> None:
+        if not path:
+            self._cache_dir = self.default_cache_dir()
+        else:
+            self._cache_dir = Path(path).absolute()
+
+    def default_cache_dir(self) -> Path:
+        return Path.home().joinpath(".cache", "remopy").absolute()
 
     def repoinfo_to_pathname(
         self, repo_info: RepoInfo, filename: str | None = None
@@ -144,6 +150,7 @@ class Remopy:
         self, repo_info: RepoInfo, force_download: bool = False
     ) -> Path:
         cache_path = self.repoinfo_to_cache_path(repo_info)
+
         if force_download or not cache_path.exists():
             remove_if_exists(cache_path)
             zip_bytes = download_repository_zipfile(repo_info)
@@ -154,17 +161,20 @@ class Remopy:
                 shutil.unpack_archive(zip_file_path, tmp)
                 folder = next(p for p in Path(tmp).iterdir() if p.is_dir())
                 shutil.move(folder.as_posix(), cache_path.as_posix())
+
         return cache_path
 
     def _download_single_file(
         self, repo_info: RepoInfo, filename: str, force_download: bool = False
     ) -> Path:
         cache_path = self.repoinfo_to_cache_path(repo_info, filename)
+
         if force_download or not cache_path.exists():
             remove_if_exists(cache_path)
             file_bytes = download_repository_single_file(repo_info, filename)
             cache_path.parent.mkdir(parents=True, exist_ok=True)
             cache_path.write_bytes(file_bytes)
+
         return cache_path
 
     def _import_from_dir(
@@ -190,7 +200,7 @@ class Remopy:
             return module
         return getattr(module, entry)
 
-    def delete_cache(self, github: str | None = None) -> None:
+    def clear_cache(self, github: str | None = None) -> None:
         if github:
             repo_info = parse_repo_info(github)
             cache_path = self.repoinfo_to_cache_path(repo_info)
